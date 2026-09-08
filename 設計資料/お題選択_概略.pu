@@ -1,0 +1,55 @@
+@startuml
+
+hide footbox
+'title マッチング
+
+actor player1 as PL1
+participant server as server
+actor player2 as PL2
+
+note over PL1: ゲームスタート
+
+PL1 --> server : マッチング申請要求(userid)
+activate server
+note over server: useridを登録
+PL1 <-- server : マッチング申請応答(OK)
+deactivate server
+
+note left PL1: マッチング確認要求を\n一定間隔で投げる
+
+PL1 --> server : マッチング確認要求
+activate server
+note over server: 相手がいるか確認\nいないのでNG
+PL1 <-- server : マッチング確認応答(NG)
+deactivate server
+...
+PL1 --> server : マッチング確認要求
+activate server
+note over server: 相手がいるか確認\nいないのでNG
+PL1 <-- server : マッチング確認応答(NG)
+deactivate server
+
+note over PL2: ゲームスタート
+
+PL2 --> server : マッチング申請要求(userid)
+activate server
+note over server: useridを登録
+PL2 <-- server : マッチング申請応答(OK)
+deactivate server
+
+PL1 --> server : マッチング確認要求
+activate server
+note over server: 相手がいるか確認\nいるのでOK
+note over server: room作成
+PL1 <-- server : マッチング確認応答(OK, roomid)
+deactivate server
+
+note right PL2: マッチング確認要求を\n一定間隔で投げる
+
+PL2 --> server : マッチング確認要求
+activate server
+note over server: 相手がいるか確認\nいるのでOK
+PL2 <-- server : マッチング確認応答(OK, roomid)
+deactivate server
+
+@enduml

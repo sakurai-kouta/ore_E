@@ -1,0 +1,238 @@
+@startuml
+
+hide footbox
+title マッチング
+
+actor player2 as PL2
+actor player1 as PL1
+participant server as server
+database database as DB
+/'--------------------------------------------------------------------------'/
+'マッチング成立
+/'--------------------------------------------------------------------------'/
+
+== マッチング成立 ==
+
+' PL1のマッチング申請
+note over PL1: 対戦ボタンを押す
+PL1 --> server : マッチング申請要求(password)
+activate server
+note over server: iuidの発行
+server --> DB : マッチング待機リスト登録(iuid, password, 現在時刻)
+activate DB
+note over DB: 待機リスト追記\n waitList[password].add(iuid)
+server <-- DB : 未マッチング
+deactivate DB
+PL1 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+' PL1のマッチング成立確認
+alt マッチング成立 \nor TOまでポーリング
+    PL1 --> server : マッチング成立確認要求(iuid, password)
+    activate server
+    server --> DB : ルーム検索(iuid, password)
+    activate DB
+    server <-- DB : ルームなし
+    deactivate DB
+    PL1 <-- server : マッチング成立確認応答(未成立)
+    deactivate server
+end
+
+' PL2のマッチング申請
+note over PL2: 対戦ボタンを押す
+PL2 --> server : マッチング申請要求
+activate server
+note over server: iuidの発行
+server --> DB : マッチング待機リスト登録(iuid, password, 現在時刻)
+activate DB
+note over DB: 待機リスト追記\n waitList[password].add(iuid)
+server <-- DB : マッチング成立(iuid1, iuid2)
+deactivate DB
+server --> DB : マッチング待機リスト削除
+activate DB
+note over DB: 待機リスト削除\n(期限切れの待機者全て)
+return
+deactivate DB
+note over server: ルームIDの発行
+server --> DB : ルーム作成(roomid, iuid1, iuid2)
+activate DB
+note over DB: roomList[roomid]\n    .add((iuid1, iuid2))
+return
+deactivate DB
+PL2 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+' PL2のマッチング成立確認
+PL2 --> server : マッチング成立確認要求(iuid, password)
+activate server
+server --> DB : ルーム検索(iuid, password)
+activate DB
+server <-- DB : ルームあり(roomid)
+deactivate DB
+PL2 <-- server : マッチング成立確認応答(成立, roomid)
+deactivate server
+
+' PL1のマッチング成立確認
+PL1 --> server : マッチング成立確認要求(iuid)
+activate server
+server --> DB : ルーム検索(iuid, password)
+activate DB
+server <-- DB : ルームあり(roomid)
+deactivate DB
+PL1 <-- server : マッチング成立確認応答(成立, roomid)
+deactivate server
+
+/'--------------------------------------------------------------------------'/
+'マッチング中止
+/'--------------------------------------------------------------------------'/
+
+== マッチング中止 ==
+
+' PL1のマッチング申請
+note over PL1: 対戦ボタンを押す
+PL1 --> server : マッチング申請要求(password)
+activate server
+note over server: iuidの発行
+server --> DB : マッチング待機リスト登録(iuid, password, 現在時刻)
+activate DB
+note over DB: 待機リスト追記\n waitList[password].add(iuid)
+server <-- DB : 未マッチング
+deactivate DB
+PL1 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+' PL1のマッチング成立確認
+alt マッチング成立 \nor TOまでポーリング
+    PL1 --> server : マッチング成立確認要求(iuid, password)
+    activate server
+    server --> DB : ルーム検索(iuid, password)
+    activate DB
+    server <-- DB : ルームなし
+    deactivate DB
+    PL1 <-- server : マッチング成立確認応答(未成立)
+    deactivate server
+end
+
+' PL1のマッチング取消申請
+note over PL1: 取消ボタンを押す
+PL1 --> server : マッチング申請取消要求(iuid, password)
+activate server
+server --> DB : マッチング待機リスト削除
+activate DB
+note over DB: 待機リスト削除\n(期限切れの待機者全て)
+return
+deactivate DB
+PL1 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+/'--------------------------------------------------------------------------'/
+'マッチング失敗(サーバタイムアウト)
+/'--------------------------------------------------------------------------'/
+
+== マッチング失敗(サーバタイムアウト) ==
+
+' PL1のマッチング申請
+note over PL1: 対戦ボタンを押す
+PL1 --> server : マッチング申請要求(password)
+activate server
+note over server: iuidの発行
+server --> DB : マッチング待機リスト登録(iuid, password, 現在時刻)
+activate DB
+note over DB: 待機リスト追記\n waitList[password].add(iuid)
+server <-- DB : 未マッチング
+deactivate DB
+PL1 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+' PL1のマッチング成立確認
+alt マッチング成立 \nor TOまでポーリング
+    PL1 --> server : マッチング成立確認要求(iuid, password)
+    activate server
+    server --> DB : ルーム検索(iuid, password)
+    activate DB
+    server <-- DB : ルームなし
+    deactivate DB
+    PL1 <-- server : マッチング成立確認応答(未成立)
+    deactivate server
+end
+
+note over server: 申請からの経過時間 > 最大待機時間
+PL1 --> server : マッチング成立確認要求(iuid, password)
+activate server
+server --> DB : マッチング待機リスト削除
+activate DB
+note over DB: 待機リスト削除\n(期限切れの待機者全て)
+return
+deactivate DB
+PL1 <-- server : マッチング成立確認応答(タイムアウト)
+deactivate server
+
+/'--------------------------------------------------------------------------'/
+'マッチング失敗(ローカルタイムアウト)
+/'--------------------------------------------------------------------------'/
+
+== マッチング失敗(ローカルタイムアウト) ==
+
+' PL1のマッチング申請
+note over PL1: 対戦ボタンを押す
+PL1 --> server : マッチング申請要求(password)
+activate server
+note over server: iuidの発行
+server --> DB : マッチング待機リスト登録(iuid, password, 現在時刻)
+activate DB
+note over DB: 待機リスト追記\n waitList[password].add(iuid)
+server <-- DB : 未マッチング
+deactivate DB
+PL1 <-- server : マッチング申請応答(OK, iuid)
+deactivate server
+
+' PL1のマッチング成立確認
+alt マッチング成立 \nor TOまでポーリング
+    PL1 --> server : マッチング成立確認要求(iuid, password)
+    activate server
+    server --> DB : ルーム検索(iuid, password)
+    activate DB
+    server <-- DB : ルームなし
+    deactivate DB
+    PL1 <-- server : マッチング成立確認応答(未成立)
+    deactivate server
+end
+
+note over server: 申請からの経過時間 > 最大待機時間
+PL1 --> server : マッチング成立確認要求(iuid, password)
+activate server
+server --> DB : マッチング待機リスト削除
+activate DB
+note over DB: 待機リスト削除\n(期限切れの待機者全て)
+return
+deactivate DB
+PL1 x-- server : マッチング成立確認応答(タイムアウト)
+deactivate server
+
+PL1 --> server : マッチング成立確認要求(iuid, password)
+activate server
+server --> DB : マッチング待機リスト削除\n(期限切れの待機者全て)
+activate DB
+note over DB: 待機リスト削除\n(期限切れの待機者全て)
+return
+deactivate DB
+PL1 x-- server : マッチング成立確認応答(タイムアウト)
+deactivate server
+
+note over PL1: 経過時間 > 最大待機時間(ローカル)
+
+@enduml
+
+/'
+・マッチング申請要求
+　サーバにマッチング待機申請を行う。
+　サーバはインスタントユーザID(iuid)と合言葉(password)を発行し、要求元に返す。
+　マッチング待機リストにpasswordの合致する相手がいなければ、マッチング待機リストに、発行したiuidと申請時刻を格納する。
+　マッチング待機リストにpasswordの合致する相手がいるならば、ルームIDを発行して、対象ルームにPL1, PL2のiuidを格納して、マッチング待機リストから削除する。
+
+・マッチング成立確認要求
+　iuidを指定して要求する。
+　指定したiuidが属するルームが存在すればマッチング成立を返す。
+　ルームが無ければ、指定したiuidのマッチング申請時刻からの経過時間が最大待機時間を超えていたらマッチング待機リストから削除し、マッチング失敗を返す。
+
+'/
