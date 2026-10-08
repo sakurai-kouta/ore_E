@@ -1,0 +1,8 @@
+URL
+https://secure.sakura.ad.jp/vps/servers?search=&sort=-service_cd&page=1
+
+id
+ubuntu
+
+pw
+percussion6
