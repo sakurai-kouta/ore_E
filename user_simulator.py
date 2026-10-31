@@ -375,7 +375,7 @@ USERS = [
     ("test_user_003", "test_room_002"),
     ("test_user_004", "test_room_002"),
 
-    ("test_user_005", "test_room_003"),
+    #("test_user_005", "test_room_003"),
     #("test_user_006", "test_room_003"),
 ]
 
